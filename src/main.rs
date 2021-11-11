@@ -1,11 +1,10 @@
 use std::fs::File;
 use std::io::prelude::Read;
 use std::io::Cursor;
-use std::path::Path;
 use std::iter::Iterator;
+use std::path::Path;
 
 use yata::core::Candle;
-use yata::helpers::RegularMethods;
 use yata::indicators::MACD;
 use yata::prelude::*;
 
@@ -38,17 +37,6 @@ fn unpack_binance_kline_data(file_name: &str) -> String {
     return contents;
 }
 
-#[derive(Debug, Clone, Copy)]
-struct BinanceKline {
-    start_time: i64,
-    end_time: i64,
-    open: f64,
-    close: f64,
-    high: f64,
-    low: f64,
-    volume: f64,
-}
-
 fn transform_kline_data(data: String) -> Vec<Candle> {
     let lines = data.split("\n");
     let mut result: Vec<Candle> = Vec::new();
@@ -57,13 +45,12 @@ fn transform_kline_data(data: String) -> Vec<Candle> {
             continue;
         }
         let mut data = line.split(",");
-        let start_time: i64 = data.next().unwrap().parse().unwrap();
+        data.next(); //start_time
         let open: f64 = data.next().unwrap().parse().unwrap();
         let close: f64 = data.next().unwrap().parse().unwrap();
         let high: f64 = data.next().unwrap().parse().unwrap();
         let low: f64 = data.next().unwrap().parse().unwrap();
         let volume: f64 = data.next().unwrap().parse().unwrap();
-        let end_time: i64 = data.next().unwrap().parse().unwrap();
         let parsed = Candle {
             open,
             close,
@@ -76,7 +63,6 @@ fn transform_kline_data(data: String) -> Vec<Candle> {
     return result;
 }
 
-
 #[tokio::main]
 pub async fn main() {
     let temp_file = "data/temp.zip";
@@ -86,15 +72,11 @@ pub async fn main() {
     let raw_data = unpack_binance_kline_data(temp_file);
     let mut data = transform_kline_data(raw_data).into_iter();
 
-    let mut macd = MACD::default();
-    macd.period3 = 4; // setting signal period MA to 4
-    macd.method1 = "sma".parse().unwrap(); // one way of defining methods inside indicators
-    macd.method3 = RegularMethods::TEMA; // another way of defining methods inside indicators
+    let macd = MACD::default();
     let mut macd = macd.init(&data.next().unwrap()).unwrap();
 
-    for candle in data.take(10) {
+    for candle in data.take(100) {
         let result = macd.next(&candle);
-    
         println!("{:?}", result);
     }
 }
