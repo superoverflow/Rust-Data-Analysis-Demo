@@ -9,7 +9,7 @@ use yata::indicators::MACD;
 use yata::prelude::*;
 
 use chrono::prelude::*;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 
 use log::info;
 use reqwest;
@@ -22,14 +22,21 @@ fn is_current_month(year: i32, month: u32) -> bool {
     year == current_year && month == current_month
 }
 
-fn binance_data_url(symbol: String, interval: String, year: i32, month: u32) -> String {
+fn binance_data_url(symbol: String, interval: String, year: i32, month: u32, day: u32) -> String {
     let folder = if is_current_month(year, month) {
         "daily"
     } else {
         "monthly"
     };
     let base_url = format!("https://data.binance.vision/data/spot/{}/klines", folder);
-    let file_name = format!("{}-{}-{}-{:02}.zip", symbol, interval, year, month);
+    let file_name = match folder {
+        "daily" => format!(
+            "{}-{}-{}-{:02}-{:02}.zip",
+            symbol, interval, year, month, day
+        ),
+        "monthly" => format!("{}-{}-{}-{:02}.zip", symbol, interval, year, month),
+        _ => panic!("Not expected folder type"),
+    };
     let url = format!("{}/{}/{}/{}", base_url, symbol, interval, file_name);
     url
 }
@@ -53,7 +60,7 @@ fn read_zip_file(source: File) -> String {
     let mut archive = zip::ZipArchive::new(source).unwrap();
     let mut data = archive.by_index(0).unwrap();
     let mut buf = String::new();
-    data.read_to_string(&mut buf);
+    data.read_to_string(&mut buf).unwrap();
     buf
 }
 
@@ -80,18 +87,17 @@ async fn parse_binance_kline(data: &str) -> Option<Candle> {
     Some(parsed)
 }
 
-fn add_one_month(year: i32, month: u32) -> (i32, u32) {
-    let result = if month == 12 {
-        (year + 1, 1)
+fn advance_date(current_date: NaiveDate) -> NaiveDate {
+    let next_date = if !is_current_month(current_date.year(), current_date.month()) {
+        if current_date.month() < 12 {
+            NaiveDate::from_ymd(current_date.year(), current_date.month() + 1, 1)
+        } else {
+            NaiveDate::from_ymd(current_date.year() + 1, 1, 1)
+        }
     } else {
-        (year, month + 1)
+        current_date + Duration::days(1)
     };
-    result
-}
-
-struct MonthYear {
-    year: i32,
-    month: u32,
+    next_date
 }
 
 async fn get_kline_data(
@@ -100,24 +106,34 @@ async fn get_kline_data(
     from: NaiveDate,
     to: NaiveDate,
 ) -> Vec<Candle> {
-    let mut cur_year = from.year();
-    let mut cur_month = from.month();
-
-    while NaiveDate::from_ymd(cur_year, cur_month, 1) < to {
+    let mut cur_date = from;
+    let mut result: Vec<Candle> = Vec::new();
+    while cur_date < to {
         let url = binance_data_url(
             symbol.to_string(),
             interval.to_string(),
-            cur_year,
-            cur_month,
+            cur_date.year(),
+            cur_date.month(),
+            cur_date.day(),
         );
         let check = check_url_exists(url.to_string()).await;
-        println!("checking url {}:{}", url, check);
-
-        let next_month = add_one_month(cur_year, cur_month);
-        cur_year = next_month.0;
-        cur_month = next_month.1;
+        if check {
+            let mut temp_file = tempfile().expect("unable to create temp file");
+            download_binance_data_to_file(url, &mut temp_file)
+                .await
+                .unwrap();
+            let content = read_zip_file(temp_file);
+            for line in content.split("\n") {
+                let candle = parse_binance_kline(&line).await;
+                match candle {
+                    Some(data) => result.push(data),
+                    None => (),
+                }
+            }
+        }
+        cur_date = advance_date(cur_date);
     }
-    Vec::new()
+    result
 }
 
 // ---- backtest ----
@@ -130,94 +146,27 @@ async fn get_kline_data(
 // fn signals
 // fn profit_and_loss
 
-async fn test_fetch(symbol: &str, interval: &str, year: i32, month: i32) {
-    let base_url = "https://data.binance.vision/data/spot/monthly/klines";
-    let file_name = format!("{}-{}-{}-{:02}.zip", symbol, interval, year, month);
-    let url = format!("{}/{}/{}/{}", base_url, symbol, interval, file_name);
-    let response = reqwest::get(url).await.unwrap();
-    println!("{}", response.status().is_success());
-}
-
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
-async fn fetch_binance_kline_data(
-    symbol: &str,
-    interval: &str,
-    year: i32,
-    month: i32,
-    target: &mut File,
-) -> Result<()> {
-    let base_url = "https://data.binance.vision/data/spot/monthly/klines";
-    let file_name = format!("{}-{}-{}-{:02}.zip", symbol, interval, year, month);
-    let url = format!("{}/{}/{}/{}", base_url, symbol, interval, file_name);
-    let response = reqwest::get(url).await?;
-    let mut content = Cursor::new(response.bytes().await?);
-    std::io::copy(&mut content, target)?;
-    Ok(())
-}
-
-fn unpack_binance_kline_data(file: File) -> String {
-    let mut archive = zip::ZipArchive::new(file).unwrap();
-    let mut file = archive.by_index(0).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-    return contents;
-}
-
-fn transform_kline_data(data: String) -> Vec<Candle> {
-    let lines = data.split("\n");
-    let mut result: Vec<Candle> = Vec::new();
-    for line in lines {
-        if !line.contains(",") {
-            continue;
-        }
-        let mut data = line.split(",");
-        let start_time: i64 = data.next().unwrap().parse().unwrap();
-        let dt =
-            DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(start_time / 1000, 0), Utc);
-        info!("loading {}", dt);
-
-        let open: f64 = data.next().unwrap().parse().unwrap();
-        let close: f64 = data.next().unwrap().parse().unwrap();
-        let high: f64 = data.next().unwrap().parse().unwrap();
-        let low: f64 = data.next().unwrap().parse().unwrap();
-        let volume: f64 = data.next().unwrap().parse().unwrap();
-        let parsed = Candle {
-            open,
-            close,
-            high,
-            low,
-            volume,
-        };
-        result.push(parsed);
-    }
-    return result;
-}
-
 #[tokio::main]
 pub async fn main() {
-    get_kline_data(
+    println!("download data");
+    let data = get_kline_data(
         String::from("ETHUSDT"),
-        String::from("1d"),
-        NaiveDate::from_ymd(2017, 1, 1),
+        String::from("4h"),
+        NaiveDate::from_ymd(2020, 1, 1),
         NaiveDate::from_ymd(2021, 11, 21),
-    ).await;
-    println!("begin process");
-    let mut temp_file = tempfile().unwrap();
-    fetch_binance_kline_data("ETHUSDT", "1d", 2021, 7, &mut temp_file)
-        .await
-        .unwrap();
-    println!("downloaded data");
-    let raw_data = unpack_binance_kline_data(temp_file);
-    let mut data = transform_kline_data(raw_data).into_iter();
-    println!("transformed into [{}] kline", data.len());
-
+    )
+    .await;
+    println!("downloaded {}", data.len());
     let macd = MACD::default();
-    let mut macd = macd.init(&data.next().unwrap()).unwrap();
+    let mut macd = macd
+        .init(&data.first().unwrap())
+        .expect("Unable to initialise MACD");
 
     let mut result: Vec<IndicatorResult> = Vec::new();
     for candle in data {
-        result.push(macd.next(&candle));
+        let indicator = macd.next(&candle);
+        result.push(indicator);
+        println!("{:#?}", indicator);
     }
     println!("calculated into [{}] indicator", result.len());
-    println!("result[0] {:#?}", result.get(0).unwrap());
 }

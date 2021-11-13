@@ -15,3 +15,7 @@
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
 - We can feed in the Kline to a analytics engine to calculate moving average
+
+
+## Testing
+- integration test - use `python -m http.server` on data folder
