@@ -19,3 +19,8 @@
 
 ## Testing
 - integration test - use `python -m http.server` on data folder
+
+
+## Async
+- `block_on` vs `await`
+- `futures::join!`
