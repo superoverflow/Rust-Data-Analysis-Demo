@@ -1,13 +1,10 @@
 mod binance_data;
+mod account;
 use chrono::NaiveDate;
 
 use yata::core::IndicatorResult;
 use yata::indicators::MACD;
 use yata::prelude::*;
-
-// ---- backtest ----
-// fn available_fund
-// fn current_position
 
 // --- end result ---
 // fn kline

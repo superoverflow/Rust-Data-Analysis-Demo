@@ -11,6 +11,7 @@
 - tokio may have changed the mut ownership so i can pass mut files around from functions to functions?
 - reqwest -> status code  -> is_success
 - var match -> you may need struct { .. }
+- mod is quite confusing at first https://www.sheshbabu.com/posts/rust-module-system/
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
