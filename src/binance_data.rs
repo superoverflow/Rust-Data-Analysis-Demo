@@ -61,12 +61,12 @@ fn read_zip_file(source: File) -> String {
 
 #[derive(Debug, PartialEq)]
 pub struct BinanceKline {
-    start_time: NaiveDateTime,
-    open: f64,
-    close: f64,
-    high: f64,
-    low: f64,
-    volume: f64,
+    pub start_time: NaiveDateTime,
+    pub open: f64,
+    pub close: f64,
+    pub high: f64,
+    pub low: f64,
+    pub volume: f64,
 }
 
 impl OHLCV for BinanceKline {

@@ -1,27 +1,27 @@
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDateTime;
 
-struct Account {
-    available_fund: f64,
-    position: Position,
-    profit_and_loss_history: Vec<TimeValue>,
-    trade_history: Vec<Trade>,
+pub struct Account {
+    pub available_fund: f64,
+    pub position: Position,
+    pub profit_and_loss_history: Vec<TimeValue>,
+    pub trade_history: Vec<Trade>,
 }
 
 #[derive(Debug, PartialEq)]
-struct TimeValue {
+pub struct TimeValue {
     timestamp: NaiveDateTime,
     realised_pnl: f64,
     unrealised_pnl: f64,
 }
 
 #[derive(Debug, PartialEq)]
-struct Position {
-    quantity: f64,
-    cost: f64,
+pub struct Position {
+    pub quantity: f64,
+    pub cost: f64,
 }
 
 #[derive(Debug, PartialEq)]
-struct Trade {
+pub struct Trade {
     timestamp: NaiveDateTime,
     buy_sell_indicator: BuySellIndicator,
     quantity: f64,
@@ -36,7 +36,7 @@ enum BuySellIndicator {
 }
 
 impl Account {
-    fn new(fund: f64, initial_position: Position, start_timestamp: NaiveDateTime) -> Account {
+    pub fn new(fund: f64, initial_position: Position, start_timestamp: NaiveDateTime) -> Account {
         let initial_pnl = TimeValue {
             timestamp: start_timestamp,
             realised_pnl: 0.,
@@ -50,7 +50,7 @@ impl Account {
         }
     }
 
-    fn open(&mut self, timestamp: NaiveDateTime, quantity: f64, price: f64, fee: f64) {
+    pub fn open(&mut self, timestamp: NaiveDateTime, quantity: f64, price: f64, fee: f64) {
         self.position.cost = (self.position.quantity * self.position.cost + quantity * price)
             / (self.position.quantity + quantity);
         self.position.quantity += quantity;
@@ -65,7 +65,7 @@ impl Account {
         });
     }
 
-    fn close(&mut self, timestamp: NaiveDateTime, quantity: f64, price: f64, fee: f64) {
+    pub fn close(&mut self, timestamp: NaiveDateTime, quantity: f64, price: f64, fee: f64) {
         // book profit/loss
         let last_pnl = self.profit_and_loss_history.last().unwrap();
         let realised_pnl = quantity * (price - self.position.cost);
@@ -88,7 +88,7 @@ impl Account {
         });
     }
 
-    fn mark_to_market(&mut self, closing_price: f64, timestamp: NaiveDateTime) {
+    pub fn mark_to_market(&mut self, closing_price: f64, timestamp: NaiveDateTime) {
         let last_pnl = self.profit_and_loss_history.last().unwrap();
         let unrealised_pnl = self.position.quantity * (closing_price - self.position.cost);
         let current_pnl = TimeValue {
