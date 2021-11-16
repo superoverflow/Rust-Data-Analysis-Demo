@@ -6,6 +6,9 @@ use yata::core::IndicatorResult;
 use yata::indicators::MACD;
 use yata::prelude::*;
 
+use env_logger::Env;
+use log::info;
+
 // --- end result ---
 // fn kline
 // fn indicators
@@ -14,7 +17,9 @@ use yata::prelude::*;
 
 #[tokio::main]
 pub async fn main() {
-    println!("download data");
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+
+    info!("download data from binance");
     let data = binance_data::get_kline_data(
         String::from("ETHUSDT"),
         String::from("4h"),
@@ -22,7 +27,9 @@ pub async fn main() {
         NaiveDate::from_ymd(2021, 11, 21),
     )
     .await;
-    println!("downloaded {}", data.len());
+    info!("downloaded [{}] klines", data.len());
+
+
     let macd = MACD::default();
     let mut macd = macd
         .init(&data.first().unwrap())
@@ -34,5 +41,5 @@ pub async fn main() {
         result.push(indicator);
         println!("{:#?}", indicator);
     }
-    println!("calculated into [{}] indicator", result.len());
+    info!("calculated into [{}] indicator", result.len());
 }

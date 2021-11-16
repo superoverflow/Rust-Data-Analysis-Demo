@@ -6,9 +6,7 @@ use std::iter::Iterator;
 use yata::core::OHLCV;
 
 use chrono::prelude::*;
-use chrono::{DateTime, Duration, NaiveDateTime, Utc};
-
-use log::info;
+use chrono::{Duration, NaiveDateTime, Utc};
 use reqwest;
 use tempfile::tempfile;
 
