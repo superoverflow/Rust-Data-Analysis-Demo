@@ -3,7 +3,7 @@ use std::io::prelude::Read;
 use std::io::Cursor;
 use std::iter::Iterator;
 
-use yata::core::Candle;
+use yata::core::OHLCV;
 
 use chrono::prelude::*;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
@@ -61,20 +61,48 @@ fn read_zip_file(source: File) -> String {
     buf
 }
 
-async fn parse_binance_kline(data: &str) -> Option<Candle> {
+#[derive(Debug, PartialEq)]
+pub struct BinanceKline {
+    start_time: NaiveDateTime,
+    open: f64,
+    close: f64,
+    high: f64,
+    low: f64,
+    volume: f64,
+}
+
+impl OHLCV for BinanceKline {
+    fn open(&self) -> f64 {
+        self.open
+    }
+    fn close(&self) -> f64 {
+        self.close
+    }
+    fn high(&self) -> f64 {
+        self.high
+    }
+    fn low(&self) -> f64 {
+        self.low
+    }
+    fn volume(&self) -> f64 {
+        self.volume
+    }
+}
+
+fn parse_binance_kline(data: &str) -> Option<BinanceKline> {
     if !data.contains(",") {
         return None;
     }
     let mut data = data.split(",");
     let start_time: i64 = data.next().unwrap().parse().unwrap();
-    let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(start_time / 1000, 0), Utc);
-    info!("parsing data at {}", dt);
+    let dt = NaiveDateTime::from_timestamp(start_time / 1000, 0);
     let open: f64 = data.next().unwrap().parse().unwrap();
     let close: f64 = data.next().unwrap().parse().unwrap();
     let high: f64 = data.next().unwrap().parse().unwrap();
     let low: f64 = data.next().unwrap().parse().unwrap();
     let volume: f64 = data.next().unwrap().parse().unwrap();
-    let parsed = Candle {
+    let parsed = BinanceKline {
+        start_time: dt,
         open,
         close,
         high,
@@ -102,9 +130,9 @@ pub async fn get_kline_data(
     interval: String,
     from: NaiveDate,
     to: NaiveDate,
-) -> Vec<Candle> {
+) -> Vec<BinanceKline> {
     let mut cur_date = from;
-    let mut result: Vec<Candle> = Vec::new();
+    let mut result: Vec<BinanceKline> = Vec::new();
     while cur_date < to {
         let url = binance_data_url(
             symbol.to_string(),
@@ -121,7 +149,7 @@ pub async fn get_kline_data(
                 .unwrap();
             let content = read_zip_file(temp_file);
             for line in content.split("\n") {
-                let candle = parse_binance_kline(&line).await;
+                let candle = parse_binance_kline(&line);
                 match candle {
                     Some(data) => result.push(data),
                     None => (),
@@ -131,4 +159,26 @@ pub async fn get_kline_data(
         cur_date = advance_date(cur_date);
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_binance_kline() {
+        let test_string: &str = "1635739200000,4191.50000000,4320.00000000,4146.30000000,4302.93000000,88831.99690000,1635753599999,376834938.78850900,216236,45666.95420000,193846769.34658200,0";
+        let result = parse_binance_kline(test_string).unwrap();
+        let expected = BinanceKline {
+            start_time: NaiveDate::from_ymd(2021, 11, 01).and_hms(4, 0, 0),
+            open: 4191.5,
+            close: 4320.0,
+            high: 4146.3,
+            low: 4302.93,
+            volume: 88831.9969
+        };
+
+        assert_eq!(result, expected);
+    }
+
 }
