@@ -7,7 +7,7 @@ struct Account {
     trade_history: Vec<Trade>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct TimeValue {
     timestamp: NaiveDateTime,
     realised_pnl: f64,
@@ -133,14 +133,16 @@ mod tests {
             }
         );
         assert_eq!(4999.98, account.available_fund);
-        assert_eq!(vec![Trade { 
-            timestamp: NaiveDate::from_ymd(2021, 10, 31).and_hms(0, 0, 0),
-            buy_sell_indicator: BuySellIndicator::Buy,
-            quantity: 100.0,
-            price: 20.0,
-            fee: 0.02,
-        }], account.trade_history)
-        
+        assert_eq!(
+            vec![Trade {
+                timestamp: NaiveDate::from_ymd(2021, 10, 31).and_hms(0, 0, 0),
+                buy_sell_indicator: BuySellIndicator::Buy,
+                quantity: 100.0,
+                price: 20.0,
+                fee: 0.02,
+            }],
+            account.trade_history
+        )
     }
 
     #[test]
@@ -161,12 +163,37 @@ mod tests {
             }
         );
         assert_eq!(account.available_fund, 1999.98);
-        assert_eq!(vec![Trade { 
-            timestamp: NaiveDate::from_ymd(2021, 10, 31).and_hms(0, 0, 0),
-            buy_sell_indicator: BuySellIndicator::Sell,
-            quantity: 50.0,
-            price: 20.0,
-            fee: 0.02,
-        }], account.trade_history)
+        assert_eq!(
+            vec![Trade {
+                timestamp: NaiveDate::from_ymd(2021, 10, 31).and_hms(0, 0, 0),
+                buy_sell_indicator: BuySellIndicator::Sell,
+                quantity: 50.0,
+                price: 20.0,
+                fee: 0.02,
+            }],
+            account.trade_history
+        )
+    }
+
+    #[test]
+    fn test_mark_to_market() {
+        let initial_position = Position {
+            quantity: 100.0,
+            cost: 10.0,
+        };
+        let start_timestamp = NaiveDate::from_ymd(2021, 9, 1).and_hms(0, 0, 0);
+        let mut account = Account::new(5000.0, initial_position, start_timestamp);
+        let timestamp = NaiveDate::from_ymd(2021, 10, 31).and_hms(0, 0, 0);
+        account.mark_to_market(20.0, timestamp.clone());
+
+        let latest_pnl = account.profit_and_loss_history.last().unwrap();
+        assert_eq!(
+            *latest_pnl,
+            TimeValue {
+                timestamp,
+                realised_pnl: 0.,
+                unrealised_pnl: 1000.
+            }
+        )
     }
 }
