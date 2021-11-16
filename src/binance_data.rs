@@ -95,14 +95,14 @@ fn parse_binance_kline(data: &str) -> Option<BinanceKline> {
     }
     let mut data = data.split(",");
     let start_time: i64 = data.next().unwrap().parse().unwrap();
-    let dt = NaiveDateTime::from_timestamp(start_time / 1000, 0);
+    let start_time = NaiveDateTime::from_timestamp(start_time / 1000, 0);
     let open: f64 = data.next().unwrap().parse().unwrap();
     let close: f64 = data.next().unwrap().parse().unwrap();
     let high: f64 = data.next().unwrap().parse().unwrap();
     let low: f64 = data.next().unwrap().parse().unwrap();
     let volume: f64 = data.next().unwrap().parse().unwrap();
     let parsed = BinanceKline {
-        start_time: dt,
+        start_time,
         open,
         close,
         high,
