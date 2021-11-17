@@ -67,6 +67,7 @@ pub struct BinanceKline {
     pub high: f64,
     pub low: f64,
     pub volume: f64,
+    pub end_time: NaiveDateTime,
 }
 
 impl OHLCV for BinanceKline {
@@ -99,6 +100,9 @@ fn parse_binance_kline(data: &str) -> Option<BinanceKline> {
     let high: f64 = data.next().unwrap().parse().unwrap();
     let low: f64 = data.next().unwrap().parse().unwrap();
     let volume: f64 = data.next().unwrap().parse().unwrap();
+    let end_time: i64 = data.next().unwrap().parse().unwrap();
+    let end_time = NaiveDateTime::from_timestamp(end_time / 1000, 0);
+
     let parsed = BinanceKline {
         start_time,
         open,
@@ -106,6 +110,7 @@ fn parse_binance_kline(data: &str) -> Option<BinanceKline> {
         high,
         low,
         volume,
+        end_time,
     };
     Some(parsed)
 }
@@ -174,10 +179,10 @@ mod tests {
             close: 4320.0,
             high: 4146.3,
             low: 4302.93,
-            volume: 88831.9969
+            volume: 88831.9969,
+            end_time: NaiveDate::from_ymd(2021, 11, 01).and_hms(7, 59, 59),
         };
 
         assert_eq!(result, expected);
     }
-
 }

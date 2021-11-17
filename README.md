@@ -4,7 +4,7 @@
 
 ## Goal
 - Compare HODL, DCA, SMA, MACD strategies for different coins
-- Output Return, Max drawdown
+- Output Return, Max drawdown, drawdown recovery time
 
 ## Assumption
 - holding for 1 year

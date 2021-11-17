@@ -18,7 +18,7 @@ pub async fn main() {
     info!("download data from binance");
     let klines = binance_data::get_kline_data(
         String::from("ETHUSDT"),
-        String::from("4h"),
+        String::from("1d"),
         NaiveDate::from_ymd(2020, 1, 1),
         NaiveDate::from_ymd(2021, 11, 21),
     )
