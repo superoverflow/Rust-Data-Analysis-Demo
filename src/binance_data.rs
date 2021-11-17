@@ -162,6 +162,7 @@ pub async fn get_kline_data(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::NaiveDate;
 
     #[test]
     fn test_parse_binance_kline() {
