@@ -115,6 +115,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
+name = "crypto-strategy-analysis"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "env_logger",
+ "log",
+ "reqwest",
+ "tempfile",
+ "tokio",
+ "yata",
+ "zip",
+]
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1207,20 +1221,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4a1466d0e251c9f3339b75046711569f7388d910695b6e3d31053dd46f6fb84"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "yata-lab"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "env_logger",
- "log",
- "reqwest",
- "tempfile",
- "tokio",
- "yata",
- "zip",
 ]
 
 [[package]]
