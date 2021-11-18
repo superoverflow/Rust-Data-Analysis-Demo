@@ -1,6 +1,5 @@
-mod binance_data;
-
 mod account;
+mod binance_data;
 use account::{Account, Position};
 use chrono::NaiveDate;
 
@@ -10,6 +9,29 @@ use yata::prelude::*;
 
 use env_logger::Env;
 use log::info;
+
+pub struct Trader {
+    trading_fee: TradingFee,
+    stake_size: StakeSize,
+    kline_feed: Vec<binance_data::BinanceKline>,
+    // strategy: dyn IndicatorInstance<Config = Self>
+}
+
+enum TradingFee {
+    FixFee(f64),
+    PercentageFee(f64),
+}
+
+enum StakeSize {
+    FixAmount(f64),
+    FixPercentage(f64),
+}
+
+impl Trader {
+    pub fn iter_feed(&self) {}
+    pub fn execute_buy(account: &mut Account) {}
+    pub fn execute_sell(account: &mut Account) {}
+}
 
 #[tokio::main]
 pub async fn main() {
@@ -38,7 +60,7 @@ pub async fn main() {
     let macd = MACD::default();
     let mut macd = macd.init(&first_kline).expect("Unable to initialise MACD");
     for kline in klines {
-        let timestamp = kline.start_time;
+        let timestamp = kline.end_time;
         let closing_price = kline.close;
         account.mark_to_market(closing_price, timestamp);
         let indicator = macd.next(&kline);
@@ -47,6 +69,11 @@ pub async fn main() {
 
         match (first_signal, second_signal) {
             (Action::Buy { .. }, Action::Buy { .. }) => {
+                info!(
+                    "Buy {:.2}@{:.2}",
+                    account.available_fund / closing_price,
+                    closing_price
+                );
                 if account.available_fund > 0.0 {
                     account.open(
                         timestamp,
@@ -54,9 +81,14 @@ pub async fn main() {
                         closing_price,
                         account.available_fund * 0.02,
                     )
-                }
+                };
             }
             (Action::Sell { .. }, _) => {
+                info!(
+                    "Sell {:.2}@{:.2}",
+                    account.position.quantity / closing_price,
+                    closing_price
+                );
                 if account.position.quantity > 0.0 {
                     account.close(
                         timestamp,
@@ -64,9 +96,14 @@ pub async fn main() {
                         closing_price,
                         account.position.quantity * closing_price * 0.02,
                     )
-                }
+                };
             }
             (_, Action::Sell { .. }) => {
+                info!(
+                    "Sell {:.2}@{:.2}",
+                    account.position.quantity / closing_price,
+                    closing_price
+                );
                 if account.position.quantity > 0.0 {
                     account.close(
                         timestamp,
@@ -78,7 +115,12 @@ pub async fn main() {
             }
             _ => (),
         }
-        println!("{:?}", account.profit_and_loss_history.last().unwrap());
+        println!(
+            "{:?}, {:?}, {:?}",
+            account.profit_and_loss_history.last().unwrap(),
+            account.position,
+            account.available_fund
+        );
         indicators.push(indicator);
     }
 

@@ -50,11 +50,14 @@ impl Account {
         }
     }
 
+    fn average_cost(&mut self, quantity: f64, price: f64) -> f64 {
+        (self.position.quantity * self.position.cost + quantity * price) / (self.position.quantity + quantity)
+    }
+
     pub fn open(&mut self, timestamp: NaiveDateTime, quantity: f64, price: f64, fee: f64) {
-        self.position.cost = (self.position.quantity * self.position.cost + quantity * price)
-            / (self.position.quantity + quantity);
+        self.position.cost = self.average_cost(quantity, price);
         self.position.quantity += quantity;
-        self.available_fund -= fee;
+        self.available_fund -= price * quantity + fee;
 
         self.trade_history.push(Trade {
             timestamp,
@@ -66,18 +69,19 @@ impl Account {
     }
 
     pub fn close(&mut self, timestamp: NaiveDateTime, quantity: f64, price: f64, fee: f64) {
-        // book profit/loss
         let last_pnl = self.profit_and_loss_history.last().unwrap();
-        let realised_pnl = quantity * (price - self.position.cost);
-        let current_pnl = TimeValue {
+        let current_pnl = quantity * (price - self.position.cost);
+        let realised_pnl = last_pnl.realised_pnl + current_pnl;
+        let unrealised_pnl = last_pnl.unrealised_pnl - current_pnl;
+        let new_pnl = TimeValue {
+            timestamp,
             realised_pnl,
-            ..*last_pnl
+            unrealised_pnl,
         };
-        self.profit_and_loss_history.push(current_pnl);
+        self.profit_and_loss_history.push(new_pnl);
 
         self.position.quantity -= quantity;
-        self.available_fund += quantity * price;
-        self.available_fund -= fee;
+        self.available_fund +=  price * quantity - fee;
 
         self.trade_history.push(Trade {
             timestamp,
@@ -91,12 +95,12 @@ impl Account {
     pub fn mark_to_market(&mut self, closing_price: f64, timestamp: NaiveDateTime) {
         let last_pnl = self.profit_and_loss_history.last().unwrap();
         let unrealised_pnl = self.position.quantity * (closing_price - self.position.cost);
-        let current_pnl = TimeValue {
+        let new_pnl = TimeValue {
             timestamp,
             unrealised_pnl,
             realised_pnl: last_pnl.realised_pnl,
         };
-        self.profit_and_loss_history.push(current_pnl);
+        self.profit_and_loss_history.push(new_pnl);
     }
 }
 
