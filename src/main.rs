@@ -10,11 +10,11 @@ use yata::prelude::*;
 use env_logger::Env;
 use log::info;
 
-pub struct Trader {
+pub struct Trader<T> {
     trading_fee: TradingFee,
     stake_size: StakeSize,
     kline_feed: Vec<binance_data::BinanceKline>,
-    // strategy: dyn IndicatorInstance<Config = Self>
+    indicator_feed: Box<dyn IndicatorInstance<Config = T>>,
 }
 
 enum TradingFee {

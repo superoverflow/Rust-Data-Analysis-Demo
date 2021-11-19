@@ -23,6 +23,7 @@
 - use `#[cfg(test)]` to do test driven development
 - use `env_logger` for logging
 - compare `unwrap` vs `expect` vs `?`
+- It is really difficult to write an abstract type of yata::core::IndicatorInstance, as it has a circular dependency, i can only think of using `Box<dyn IndicatorInstance<Config = T>>` to by pass it
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
