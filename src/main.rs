@@ -7,15 +7,14 @@ use yata::core::{Action, IndicatorResult};
 use yata::indicators::MACD;
 use yata::prelude::*;
 
-
 use env_logger::Env;
 use log::info;
 
-pub struct Trader<'a, T> {
+pub struct Trader<'a> {
     trading_fee: TradingFee,
     stake_size: StakeSize,
     kline_feed: &'a Vec<binance_data::BinanceKline>,
-    indicators: &'a dyn dd::IndicatorInstanceDyn<T>
+    indicator: &'a mut dyn dd::IndicatorInstanceDyn<binance_data::BinanceKline>,
 }
 
 enum TradingFee {
@@ -28,9 +27,21 @@ enum StakeSize {
     FixPercentage(f64),
 }
 
-impl<'a, T> Trader<'a, T> {
-    pub fn next_trade_session(&self) {
-         
+impl<'a> Trader<'a> {
+    pub fn new(
+        kline_feed: &'a Vec<binance_data::BinanceKline>,
+        indicator: &'a mut dyn dd::IndicatorInstanceDyn<binance_data::BinanceKline>,
+    ) -> Self {
+        Trader {
+            trading_fee: TradingFee::PercentageFee(0.5),
+            stake_size: StakeSize::FixPercentage(100.0),
+            kline_feed,
+            indicator,
+        }
+    }
+
+    pub fn next_trade_session(&mut self) {
+        self.indicator.next(self.kline_feed.get(0).unwrap());
     }
     pub fn execute_buy(account: &mut Account) {}
     pub fn execute_sell(account: &mut Account) {}
@@ -70,7 +81,6 @@ pub async fn main() {
 
         let first_signal = indicator.signals().first().unwrap();
         let second_signal = indicator.signals().last().unwrap();
-        
         match (first_signal, second_signal) {
             (Action::Buy { .. }, Action::Buy { .. }) => {
                 info!(
