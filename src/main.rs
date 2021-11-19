@@ -7,14 +7,15 @@ use yata::core::{Action, IndicatorResult};
 use yata::indicators::MACD;
 use yata::prelude::*;
 
+
 use env_logger::Env;
 use log::info;
 
-pub struct Trader<T> {
+pub struct Trader<'a, T> {
     trading_fee: TradingFee,
     stake_size: StakeSize,
-    kline_feed: Vec<binance_data::BinanceKline>,
-    indicator_feed: Box<dyn IndicatorInstance<Config = T>>,
+    kline_feed: &'a Vec<binance_data::BinanceKline>,
+    indicators: &'a dyn dd::IndicatorInstanceDyn<T>
 }
 
 enum TradingFee {
@@ -27,8 +28,10 @@ enum StakeSize {
     FixPercentage(f64),
 }
 
-impl Trader {
-    pub fn iter_feed(&self) {}
+impl<'a, T> Trader<'a, T> {
+    pub fn next_trade_session(&self) {
+         
+    }
     pub fn execute_buy(account: &mut Account) {}
     pub fn execute_sell(account: &mut Account) {}
 }
@@ -64,9 +67,10 @@ pub async fn main() {
         let closing_price = kline.close;
         account.mark_to_market(closing_price, timestamp);
         let indicator = macd.next(&kline);
+
         let first_signal = indicator.signals().first().unwrap();
         let second_signal = indicator.signals().last().unwrap();
-
+        
         match (first_signal, second_signal) {
             (Action::Buy { .. }, Action::Buy { .. }) => {
                 info!(

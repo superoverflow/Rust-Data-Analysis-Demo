@@ -23,7 +23,9 @@
 - use `#[cfg(test)]` to do test driven development
 - use `env_logger` for logging
 - compare `unwrap` vs `expect` vs `?`
-- It is really difficult to write an abstract type of yata::core::IndicatorInstance, as it has a circular dependency, i can only think of using `Box<dyn IndicatorInstance<Config = T>>` to by pass it
+- I am trying to make `trader` being able to process any `IndicatorInstance`, i find it hard to write the type due to the `Size` trait constraint. 
+  I find you can actually use (Dynamically Size Type(DST))[https://docs.rs/yata/0.4.7/yata/prelude/dd/trait.IndicatorInstanceDyn.html]
+
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
