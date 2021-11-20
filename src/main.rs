@@ -3,7 +3,9 @@ mod binance_data;
 use account::{Account, Position};
 use chrono::NaiveDate;
 
-use yata::core::{Action, IndicatorResult};
+use binance_data::BinanceKline;
+
+use yata::core::Action;
 use yata::indicators::MACD;
 use yata::prelude::*;
 
@@ -13,8 +15,8 @@ use log::info;
 pub struct Trader<'a> {
     trading_fee: TradingFee,
     stake_size: StakeSize,
-    kline_feed: &'a Vec<binance_data::BinanceKline>,
-    indicator: &'a mut dyn dd::IndicatorInstanceDyn<binance_data::BinanceKline>,
+    kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
+    indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
 }
 
 enum TradingFee {
@@ -29,8 +31,8 @@ enum StakeSize {
 
 impl<'a> Trader<'a> {
     pub fn new(
-        kline_feed: &'a Vec<binance_data::BinanceKline>,
-        indicator: &'a mut dyn dd::IndicatorInstanceDyn<binance_data::BinanceKline>,
+        kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
+        indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
     ) -> Self {
         Trader {
             trading_fee: TradingFee::PercentageFee(0.5),
@@ -40,11 +42,28 @@ impl<'a> Trader<'a> {
         }
     }
 
-    pub fn next_trade_session(&mut self) {
-        self.indicator.next(self.kline_feed.get(0).unwrap());
+    pub fn next_trade_session(&mut self, account: &mut Account) -> bool {
+        let kline = self.kline_feed.next();
+        match kline {
+            None => false,
+            Some(kline) => {
+                let indicator = self.indicator.next(&kline);
+                let signals = indicator.signals();
+                match signals.get(0).unwrap() {
+                    Action::Buy(_) => self.execute_buy(account),
+                    Action::Sell(_) => self.execute_sell(account),
+                    _ => info!("nothing to do"),
+                };
+                true
+            }
+        }
     }
-    pub fn execute_buy(account: &mut Account) {}
-    pub fn execute_sell(account: &mut Account) {}
+    pub fn execute_buy(&self, _account: &mut Account) {
+        info!("Lets buy something");
+    }
+    pub fn execute_sell(&self, _account: &mut Account) {
+        info!("Lets sell something");
+    }
 }
 
 #[tokio::main]
@@ -69,74 +88,10 @@ pub async fn main() {
         cost: 0.0,
     };
     let mut account = Account::new(start_fund, start_position, start_time);
-    let mut indicators: Vec<IndicatorResult> = Vec::new();
-
     let macd = MACD::default();
     let mut macd = macd.init(&first_kline).expect("Unable to initialise MACD");
-    for kline in klines {
-        let timestamp = kline.end_time;
-        let closing_price = kline.close;
-        account.mark_to_market(closing_price, timestamp);
-        let indicator = macd.next(&kline);
 
-        let first_signal = indicator.signals().first().unwrap();
-        let second_signal = indicator.signals().last().unwrap();
-        match (first_signal, second_signal) {
-            (Action::Buy { .. }, Action::Buy { .. }) => {
-                info!(
-                    "Buy {:.2}@{:.2}",
-                    account.available_fund / closing_price,
-                    closing_price
-                );
-                if account.available_fund > 0.0 {
-                    account.open(
-                        timestamp,
-                        account.available_fund / closing_price,
-                        closing_price,
-                        account.available_fund * 0.02,
-                    )
-                };
-            }
-            (Action::Sell { .. }, _) => {
-                info!(
-                    "Sell {:.2}@{:.2}",
-                    account.position.quantity / closing_price,
-                    closing_price
-                );
-                if account.position.quantity > 0.0 {
-                    account.close(
-                        timestamp,
-                        account.position.quantity,
-                        closing_price,
-                        account.position.quantity * closing_price * 0.02,
-                    )
-                };
-            }
-            (_, Action::Sell { .. }) => {
-                info!(
-                    "Sell {:.2}@{:.2}",
-                    account.position.quantity / closing_price,
-                    closing_price
-                );
-                if account.position.quantity > 0.0 {
-                    account.close(
-                        timestamp,
-                        account.position.quantity,
-                        closing_price,
-                        account.position.quantity * closing_price * 0.02,
-                    )
-                }
-            }
-            _ => (),
-        }
-        println!(
-            "{:?}, {:?}, {:?}",
-            account.profit_and_loss_history.last().unwrap(),
-            account.position,
-            account.available_fund
-        );
-        indicators.push(indicator);
-    }
-
-    info!("calculated into [{}] indicator", indicators.len());
+    let mut klines_iter = klines.into_iter();
+    let mut trader = Trader::new(&mut klines_iter, &mut macd);
+    while trader.next_trade_session(&mut account) {};
 }
