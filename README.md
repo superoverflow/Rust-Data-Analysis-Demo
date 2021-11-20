@@ -25,6 +25,7 @@
 - compare `unwrap` vs `expect` vs `?`
 - I am trying to make `trader` being able to process any `IndicatorInstance`, i find it hard to write the type due to the `Size` trait constraint. 
   I find you can actually use (Dynamically Size Type(DST))[https://docs.rs/yata/0.4.7/yata/prelude/dd/trait.IndicatorInstanceDyn.html]
+- need life time 'a to determine borrow reference for functions
 
 
 ## Ideas

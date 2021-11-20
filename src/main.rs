@@ -16,7 +16,7 @@ pub struct Trader<'a> {
     trading_fee: TradingFee,
     stake_size: StakeSize,
     kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
-    indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
+    indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>
 }
 
 pub enum TradingFee {
@@ -34,13 +34,13 @@ impl<'a> Trader<'a> {
         kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
         indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
         trading_fee: TradingFee,
-        stake_size: StakeSize,
+        stake_size: StakeSize
     ) -> Self {
         Trader {
             kline_feed,
             indicator,
             trading_fee: trading_fee,
-            stake_size: stake_size,
+            stake_size: stake_size
         }
     }
 
@@ -54,7 +54,7 @@ impl<'a> Trader<'a> {
 
                 let indicator = self.indicator.next(&kline);
                 let signals = indicator.signals();
-                match signals.get(0).unwrap() {
+                match signals.get(1).unwrap() {
                     Action::Buy(_) => self.execute_buy(timestamp, price, account),
                     Action::Sell(_) => self.execute_sell(timestamp, price, account),
                     _ => debug!("nothing to do"),
@@ -102,9 +102,9 @@ pub async fn main() {
     let start_date = NaiveDate::from_ymd(2020, 1, 1);
     let end_date = Utc::today() - Duration::days(1);
     let end_date = end_date.naive_utc();
-    let symbol = "ETHUSDT";
+    let symbol = "BTCUSDT";
     let interval = "1d";
-    info!("download data from binance for [{}/{}] from {} to {}", symbol, interval, start_date, end_date);
+    info!("download data from binance for [{}/{}] from [{}] to [{}]", symbol, interval, start_date, end_date);
     let klines = binance_data::get_kline_data(symbol, interval, start_date, end_date).await;
     info!("downloaded [{}] klines", klines.len());
 
