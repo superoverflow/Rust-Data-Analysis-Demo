@@ -6,7 +6,7 @@ use chrono::{Duration, NaiveDate, Utc};
 use yata::indicators::MACD;
 use yata::prelude::*;
 
-use trader::{StakeSize, TradingFee, Trader};
+use trader::{StakeSize, TradingFee, MACDTrader, GenericTrader};
 
 use env_logger::Env;
 use log::info;
@@ -40,7 +40,7 @@ pub async fn main() {
     let stake_size = StakeSize::FixPercentage(1.);
     let trading_fee = TradingFee::PercentageFee(0.5);
     let mut klines_iter = klines.into_iter();
-    let mut trader = Trader::new(&mut klines_iter, &mut macd, trading_fee, stake_size);
+    let mut trader = MACDTrader::new(&mut klines_iter, &mut macd, trading_fee, stake_size);
 
     info!("running backtest");
     loop {
