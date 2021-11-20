@@ -92,7 +92,7 @@ impl Account {
         });
     }
 
-    pub fn mark_to_market(&mut self, closing_price: f64, timestamp: NaiveDateTime) {
+    pub fn mark_to_market(&mut self, timestamp: NaiveDateTime, closing_price: f64) {
         let last_pnl = self.profit_and_loss_history.last().unwrap();
         let unrealised_pnl = self.position.quantity * (closing_price - self.position.cost);
         let new_pnl = TimeValue {
@@ -189,7 +189,7 @@ mod tests {
         let start_timestamp = NaiveDate::from_ymd(2021, 9, 1).and_hms(0, 0, 0);
         let mut account = Account::new(5000.0, initial_position, start_timestamp);
         let timestamp = NaiveDate::from_ymd(2021, 10, 31).and_hms(0, 0, 0);
-        account.mark_to_market(20.0, timestamp.clone());
+        account.mark_to_market(timestamp.clone(), 20.0);
 
         let latest_pnl = account.profit_and_loss_history.last().unwrap();
         assert_eq!(

@@ -129,8 +129,8 @@ fn advance_date(current_date: NaiveDate) -> NaiveDate {
 }
 
 pub async fn get_kline_data(
-    symbol: String,
-    interval: String,
+    symbol: &str,
+    interval: &str,
     from: NaiveDate,
     to: NaiveDate,
 ) -> Vec<BinanceKline> {
