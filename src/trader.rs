@@ -27,9 +27,10 @@ pub trait GenericTrader<'a> {
         stake_size: StakeSize,
     ) -> Self;
     fn determine_trade(signals: &[Action]) -> Action;
-    fn next_trade_session(&mut self, account: &mut Account) -> Option<BinanceKline>;
     fn stake_size(&self) -> StakeSize;
     fn trading_fee(&self) -> TradingFee;
+    fn kline(&mut self) -> &mut dyn Iterator<Item = BinanceKline>;
+    fn indicator(&mut self) -> &mut dyn dd::IndicatorInstanceDyn<BinanceKline>;
 
     fn execute_buy(&self, timestamp: NaiveDateTime, price: f64, account: &mut Account) {
         let fund = account.available_fund;
@@ -60,6 +61,26 @@ pub trait GenericTrader<'a> {
             account.close(timestamp, current_position, price, fee)
         }
     }
+
+    fn next_trade_session(&mut self, account: &mut Account) -> Option<BinanceKline> {
+        let kline = self.kline().next();
+        match kline {
+            None => None,
+            Some(kline) => {
+                let timestamp = kline.end_time;
+                let price = kline.close;
+
+                let indicator = self.indicator().next(&kline);
+                let signals = indicator.signals();
+                match MACDTrader::determine_trade(signals) {
+                    Action::Buy(_) => self.execute_buy(timestamp, price, account),
+                    Action::Sell(_) => self.execute_sell(timestamp, price, account),
+                    _ => debug!("nothing to do"),
+                };
+                Some(kline)
+            }
+        }
+    }
 }
 
 pub struct MACDTrader<'a> {
@@ -83,33 +104,24 @@ impl<'a> GenericTrader<'a> for MACDTrader<'a> {
             stake_size: stake_size,
         }
     }
+    
     fn stake_size(&self) -> StakeSize {
         self.stake_size
     }
+
     fn trading_fee(&self) -> TradingFee {
         self.trading_fee
     }
 
+    fn kline(&mut self) -> &mut dyn Iterator<Item = BinanceKline> {
+        self.kline_feed
+    }
+
+    fn indicator(&mut self) -> &mut dyn dd::IndicatorInstanceDyn<BinanceKline> {
+        self.indicator
+    }
+
     fn determine_trade(signals: &[Action]) -> Action {
         *signals.get(1).unwrap()
-    }
-    fn next_trade_session(&mut self, account: &mut Account) -> Option<BinanceKline> {
-        let kline = self.kline_feed.next();
-        match kline {
-            None => None,
-            Some(kline) => {
-                let timestamp = kline.end_time;
-                let price = kline.close;
-
-                let indicator = self.indicator.next(&kline);
-                let signals = indicator.signals();
-                match MACDTrader::determine_trade(signals) {
-                    Action::Buy(_) => self.execute_buy(timestamp, price, account),
-                    Action::Sell(_) => self.execute_sell(timestamp, price, account),
-                    _ => debug!("nothing to do"),
-                };
-                Some(kline)
-            }
-        }
     }
 }
