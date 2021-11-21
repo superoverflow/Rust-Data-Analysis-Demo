@@ -1,11 +1,12 @@
 mod account;
 mod binance_data;
-mod trader;
+mod traders;
+mod indicators;
 
 use account::{Account, Position};
 use binance_data::BinanceKline;
 use chrono::{Duration, NaiveDate, Utc};
-use trader::{GenericTrader, MACDTrader, StakeSize, TradingFee};
+use traders::{GenericTrader, MACDTrader, StakeSize, TradingFee, HODLTrader};
 
 use env_logger::Env;
 use log::info;
@@ -41,17 +42,27 @@ fn initialise_acount(klines: Vec<BinanceKline>) -> Account {
 fn initialise_macd_trader<'a>(
     klines_iter: &'a mut dyn Iterator<Item = BinanceKline>,
 ) -> MACDTrader {
-    info!("setting up trader");
+    info!("setting up macd trader");
     let stake_size = StakeSize::FixPercentage(1.);
-    let trading_fee = TradingFee::PercentageFee(0.5);
+    let trading_fee = TradingFee::PercentageFee(0.005);
     let trader = MACDTrader::new(klines_iter, trading_fee, stake_size);
     trader
 }
 
-fn backtest(macd_trader: &mut MACDTrader, account: &mut Account) {
+fn initialise_hodl_trader<'a>(
+    klines_iter: &'a mut dyn Iterator<Item = BinanceKline>,
+) -> HODLTrader {
+    info!("setting up hodl trader");
+    let trading_fee = TradingFee::PercentageFee(0.005);
+    let ignore_stake_size = StakeSize::FixPercentage(1.);
+    let trader = HODLTrader::new(klines_iter, trading_fee, ignore_stake_size);
+    trader
+}
+
+fn backtest<'a, T>(trader: &mut T, account: &mut Account) where T: GenericTrader<'a> {
     info!("running backtest");
     loop {
-        let kline = macd_trader.next_trade_session(account);
+        let kline = trader.next_trade_session(account);
         match kline {
             Some(kline) => {
                 account.mark_to_market(kline.end_time, kline.close);
@@ -68,6 +79,7 @@ pub async fn main() {
     let klines = download_kline().await;
     let mut klines_iter = klines.clone().into_iter();
     let mut account = initialise_acount(klines);
-    let mut macd_trader = initialise_macd_trader(&mut klines_iter);
-    backtest(&mut macd_trader, &mut account);
+    //let mut trader = initialise_macd_trader(&mut klines_iter);
+    let mut trader = initialise_hodl_trader(&mut klines_iter);
+    backtest(&mut trader, &mut account);
 }

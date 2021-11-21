@@ -1,7 +1,8 @@
 use crate::account::Account;
 use crate::binance_data::BinanceKline;
+use crate::indicators::{HODL};
 use chrono::NaiveDateTime;
-use log::{debug, info};
+use log::debug;
 use yata::core::Action;
 use yata::prelude::*;
 use yata::indicators::MACD;
@@ -45,7 +46,7 @@ pub trait GenericTrader<'a> {
         let quantity = (stake + fee) / price;
 
         if quantity > 0.0 {
-            info!("B {}, {:.08}, {:.08}", timestamp, quantity, price);
+            debug!("B {}, {:.08}, {:.08}", timestamp, quantity, price);
             account.open(timestamp, quantity, price, fee);
         }
     }
@@ -57,7 +58,7 @@ pub trait GenericTrader<'a> {
             TradingFee::PercentageFee(pct) => price * current_position * pct,
         };
         if current_position > 0.0 {
-            info!("S {}, {:.08}, {:0.8}", timestamp, current_position, price);
+            debug!("S {}, {:.08}, {:0.8}", timestamp, current_position, price);
             account.close(timestamp, current_position, price, fee)
         }
     }
@@ -72,7 +73,7 @@ pub trait GenericTrader<'a> {
 
                 let indicator = self.indicator().next(&kline);
                 let signals = indicator.signals();
-                match MACDTrader::determine_trade(signals) {
+                match Self::determine_trade(signals) {
                     Action::Buy(_) => self.execute_buy(timestamp, price, account),
                     Action::Sell(_) => self.execute_sell(timestamp, price, account),
                     _ => debug!("nothing to do"),
@@ -97,6 +98,7 @@ impl<'a> GenericTrader<'a> for MACDTrader<'a> {
         trading_fee: TradingFee,
         stake_size: StakeSize,
     ) -> Self {
+        debug!("creating a MACD Trader");
         let macd = MACD::default();
         let macd = macd.init(&kline_feed.next().unwrap()).expect("Unable to initialise MACD");
         
@@ -125,6 +127,56 @@ impl<'a> GenericTrader<'a> for MACDTrader<'a> {
     }
 
     fn determine_trade(signals: &[Action]) -> Action {
+        debug!("determine trades with macd signal");
         *signals.get(1).unwrap()
     }
 }
+
+
+// HODL Trader
+pub struct HODLTrader<'a> {
+    trading_fee: TradingFee,
+    stake_size: StakeSize,
+    kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
+    indicator: Box<dyn dd::IndicatorInstanceDyn<BinanceKline>>,
+}
+
+impl<'a> GenericTrader<'a> for HODLTrader<'a> {
+    fn new(
+        kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
+        trading_fee: TradingFee,
+        _stake_size: StakeSize,
+    ) -> Self {
+        debug!("creating a HODL Trader");
+        let hodl = HODL::default();
+        let hodl = hodl.init(&kline_feed.next().unwrap()).expect("Unable to initialise MACD");
+        
+        Self {
+            kline_feed,
+            indicator: Box::new(hodl),
+            trading_fee,
+            stake_size: StakeSize::FixPercentage(1.),
+        }
+    }
+    fn stake_size(&self) -> StakeSize {
+        self.stake_size
+    }
+
+    fn trading_fee(&self) -> TradingFee {
+        self.trading_fee
+    }
+
+    fn kline(&mut self) -> &mut dyn Iterator<Item = BinanceKline> {
+        self.kline_feed
+    }
+
+    fn indicator(&mut self) -> &mut dyn dd::IndicatorInstanceDyn<BinanceKline> {
+        self.indicator.as_mut()
+    }
+
+    fn determine_trade(signals: &[Action]) -> Action {
+        debug!("determine trades with hodl signal");
+        *signals.get(0).unwrap()
+    }
+}
+// DCA Trader
