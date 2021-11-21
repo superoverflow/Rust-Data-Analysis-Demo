@@ -59,7 +59,7 @@ fn read_zip_file(source: File) -> String {
     buf
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct BinanceKline {
     pub start_time: NaiveDateTime,
     pub open: f64,
