@@ -26,7 +26,7 @@
 - I am trying to make `trader` being able to process any `IndicatorInstance`, i find it hard to write the type due to the `Size` trait constraint. 
   I find you can actually use (Dynamically Size Type(DST))[https://docs.rs/yata/0.4.7/yata/prelude/dd/trait.IndicatorInstanceDyn.html]
 - need life time 'a to determine borrow reference for functions
-
+- Fixing dyn type in a trait was causing a bit of headache to me, at the end i found `self.indicator.as_mut()` and `Box` solved the issue of dynamic dispatched
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously

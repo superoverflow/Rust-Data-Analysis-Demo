@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use log::{debug, info};
 use yata::core::Action;
 use yata::prelude::*;
+use yata::indicators::MACD;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
@@ -22,7 +23,6 @@ pub enum StakeSize {
 pub trait GenericTrader<'a> {
     fn new(
         kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
-        indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
         trading_fee: TradingFee,
         stake_size: StakeSize,
     ) -> Self;
@@ -87,24 +87,27 @@ pub struct MACDTrader<'a> {
     trading_fee: TradingFee,
     stake_size: StakeSize,
     kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
-    indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
+    indicator: Box<dyn dd::IndicatorInstanceDyn<BinanceKline>>,
 }
 
 impl<'a> GenericTrader<'a> for MACDTrader<'a> {
+
     fn new(
         kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
-        indicator: &'a mut dyn dd::IndicatorInstanceDyn<BinanceKline>,
         trading_fee: TradingFee,
         stake_size: StakeSize,
     ) -> Self {
+        let macd = MACD::default();
+        let macd = macd.init(&kline_feed.next().unwrap()).expect("Unable to initialise MACD");
+        
         Self {
             kline_feed,
-            indicator,
-            trading_fee: trading_fee,
-            stake_size: stake_size,
+            indicator: Box::new(macd),
+            trading_fee,
+            stake_size,
         }
     }
-    
+
     fn stake_size(&self) -> StakeSize {
         self.stake_size
     }
@@ -118,7 +121,7 @@ impl<'a> GenericTrader<'a> for MACDTrader<'a> {
     }
 
     fn indicator(&mut self) -> &mut dyn dd::IndicatorInstanceDyn<BinanceKline> {
-        self.indicator
+        self.indicator.as_mut()
     }
 
     fn determine_trade(signals: &[Action]) -> Action {

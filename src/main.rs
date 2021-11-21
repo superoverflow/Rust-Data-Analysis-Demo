@@ -3,8 +3,6 @@ mod binance_data;
 mod trader;
 use account::{Account, Position};
 use chrono::{Duration, NaiveDate, Utc};
-use yata::indicators::MACD;
-use yata::prelude::*;
 
 use trader::{StakeSize, TradingFee, MACDTrader, GenericTrader};
 
@@ -24,7 +22,7 @@ pub async fn main() {
     let klines = binance_data::get_kline_data(symbol, interval, start_date, end_date).await;
     info!("downloaded [{}] klines", klines.len());
 
-    info!("setting up indicator");
+    info!("setting up account");
     let first_kline = klines.first().expect("no klines fetched");
     let start_time = first_kline.start_time;
     let start_fund = 1000.0;
@@ -33,14 +31,12 @@ pub async fn main() {
         cost: 0.0,
     };
     let mut account = Account::new(start_fund, start_position, start_time);
-    let macd = MACD::default();
-    let mut macd = macd.init(&first_kline).expect("Unable to initialise MACD");
 
     info!("setting up trader");
     let stake_size = StakeSize::FixPercentage(1.);
     let trading_fee = TradingFee::PercentageFee(0.5);
     let mut klines_iter = klines.into_iter();
-    let mut trader = MACDTrader::new(&mut klines_iter, &mut macd, trading_fee, stake_size);
+    let mut trader = MACDTrader::new(&mut klines_iter, trading_fee, stake_size);
 
     info!("running backtest");
     loop {
