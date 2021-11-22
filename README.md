@@ -27,6 +27,11 @@
   I find you can actually use (Dynamically Size Type(DST))[https://docs.rs/yata/0.4.7/yata/prelude/dd/trait.IndicatorInstanceDyn.html]
 - need life time 'a to determine borrow reference for functions
 - Fixing dyn type in a trait was causing a bit of headache to me, at the end i found `self.indicator.as_mut()` and `Box` solved the issue of dynamic dispatched
+- Notice why `&mut self.indicator` doesnt work but `self.indicator.as_mut()` works
+- SuperTrait: something similar to inherit multiple interface in java
+- Orphan rule: you need either the trait or the struct within your crate to impl it locally. You can 
+- While i am trying to make DCA Indicator, I have `impl has stricter requirements than trait` error. I was trying to feed a `BinanceKline:OHLCV` to `init<T: OHLVC>`. We are not allow to do this because `BinanceKline` is a subtype of `OHLCV`. When implementating the trait, we need to provide implementation of all possiblility but not possibility to a subset of types
+
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
