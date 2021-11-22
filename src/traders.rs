@@ -1,6 +1,6 @@
 use crate::account::Account;
 use crate::binance_data::BinanceKline;
-use crate::indicators::{HODL};
+use crate::indicators::{HODL, BinanceKlineIndicatorInstance};
 use chrono::NaiveDateTime;
 use log::debug;
 use yata::core::Action;
@@ -20,6 +20,8 @@ pub enum StakeSize {
     FixAmount(f64),
     FixPercentage(f64),
 }
+
+trait Indicators : dd::IndicatorInstanceDyn<BinanceKline> + BinanceKlineIndicatorInstance {}
 
 pub trait GenericTrader<'a> {
     fn new(

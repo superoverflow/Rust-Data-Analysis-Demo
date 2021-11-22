@@ -1,6 +1,7 @@
+use crate::binance_data::BinanceKline;
+use chrono::{Datelike, NaiveDateTime};
 use yata::core::{Action, Error, IndicatorResult, OHLCV};
 use yata::prelude::*;
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct HODL {}
@@ -42,5 +43,39 @@ impl IndicatorInstance for HODLInstance {
 
     fn next<T: OHLCV>(&mut self, _candle: &T) -> IndicatorResult {
         IndicatorResult::new(&[], &[Action::Buy(1)])
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct DCA {}
+
+#[derive(Debug, Clone, Copy)]
+pub struct DCAInstance {
+    last_timestamp: Option<NaiveDateTime>,
+}
+
+pub trait BinanceKlineIndicatorInstance {
+    fn next(&mut self, candle: &BinanceKline) -> IndicatorResult;
+}
+
+impl DCA {
+    fn init(candle: BinanceKline) -> Result<DCAInstance, Error> {
+        Ok(DCAInstance {
+            last_timestamp: Some(candle.start_time),
+        })
+    }
+}
+
+impl BinanceKlineIndicatorInstance for DCAInstance {
+    fn next(&mut self, candle: &BinanceKline) -> IndicatorResult {
+        let current_month = candle.start_time.month();
+        let last_month = self.last_timestamp.unwrap().month();
+
+        let action = if current_month != last_month {
+            Action::Buy(1)
+        } else {
+            Action::None
+        };
+        IndicatorResult::new(&[], &[action])
     }
 }

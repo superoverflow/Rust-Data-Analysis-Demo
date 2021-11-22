@@ -31,13 +31,14 @@
 - SuperTrait: something similar to inherit multiple interface in java
 - Orphan rule: you need either the trait or the struct within your crate to impl it locally. You can 
 - While i am trying to make DCA Indicator, I have `impl has stricter requirements than trait` error. I was trying to feed a `BinanceKline:OHLCV` to `init<T: OHLVC>`. We are not allow to do this because `BinanceKline` is a subtype of `OHLCV`. When implementating the trait, we need to provide implementation of all possiblility but not possibility to a subset of types
-
+- Solving the OHLVC problem seems to be tricky, because specialiation feature is not enabled in stable build. I can create a super trait to hold a custom indicator which consume ohlcv and time and the yata indicator, but it is a bit tricky on the return type and the method to be called. 
+- ta-rs is another library for TA and it offers flexibility for input type. if I cant make a good solution with yata, i may swap the library to ta-rs
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
 - We can feed in the Kline to a analytics engine to calculate moving average
 - We can use async stream and set up a channel for sinking the kline data, but for simplicity we choose to do async
-- We would like to spawn thread to compare different strategies, while using async to pull data
+- We would like to spawn thread to compare different strategies, while using async to pull data 
 
 ## Integration Testing
 - integration test - use `python -m http.server` on data folder

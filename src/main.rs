@@ -66,7 +66,6 @@ fn backtest<'a, T>(trader: &mut T, account: &mut Account) where T: GenericTrader
         match kline {
             Some(kline) => {
                 account.mark_to_market(kline.end_time, kline.close);
-                info!("{:?}", account.profit_and_loss_history.last().unwrap());
             }
             None => break,
         }
@@ -79,7 +78,8 @@ pub async fn main() {
     let klines = download_kline().await;
     let mut klines_iter = klines.clone().into_iter();
     let mut account = initialise_acount(klines);
-    //let mut trader = initialise_macd_trader(&mut klines_iter);
-    let mut trader = initialise_hodl_trader(&mut klines_iter);
+    let mut trader = initialise_macd_trader(&mut klines_iter);
+    //let mut trader = initialise_hodl_trader(&mut klines_iter);
     backtest(&mut trader, &mut account);
+    info!("{:?}", account.profit_and_loss_history.last().unwrap());
 }
