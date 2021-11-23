@@ -1,12 +1,12 @@
 mod account;
 mod binance_data;
-mod traders;
 mod indicators;
+mod traders;
 
 use account::{Account, Position};
 use binance_data::BinanceKline;
 use chrono::{Duration, NaiveDate, Utc};
-use traders::{GenericTrader, MACDTrader, StakeSize, TradingFee, HODLTrader};
+use traders::{DCATrader, GenericTrader, HODLTrader, MACDTrader, StakeSize, TradingFee};
 
 use env_logger::Env;
 use log::info;
@@ -39,6 +39,7 @@ fn initialise_acount(klines: Vec<BinanceKline>) -> Account {
     account
 }
 
+#[allow(dead_code)]
 fn initialise_macd_trader<'a>(
     klines_iter: &'a mut dyn Iterator<Item = BinanceKline>,
 ) -> MACDTrader {
@@ -49,17 +50,30 @@ fn initialise_macd_trader<'a>(
     trader
 }
 
+#[allow(dead_code)]
 fn initialise_hodl_trader<'a>(
     klines_iter: &'a mut dyn Iterator<Item = BinanceKline>,
 ) -> HODLTrader {
     info!("setting up hodl trader");
-    let trading_fee = TradingFee::PercentageFee(0.005);
     let ignore_stake_size = StakeSize::FixPercentage(1.);
+    let trading_fee = TradingFee::PercentageFee(0.005);
     let trader = HODLTrader::new(klines_iter, trading_fee, ignore_stake_size);
     trader
 }
 
-fn backtest<'a, T>(trader: &mut T, account: &mut Account) where T: GenericTrader<'a> {
+#[allow(dead_code)]
+fn initialise_dca_trader<'a>(klines_iter: &'a mut dyn Iterator<Item = BinanceKline>) -> DCATrader {
+    info!("setting up dca trader");
+    let ignore_stake_size = StakeSize::FixPercentage(1.);
+    let trading_fee = TradingFee::PercentageFee(0.005);
+    let trader = DCATrader::new(klines_iter, trading_fee, ignore_stake_size);
+    trader
+}
+
+fn backtest<'a, T>(trader: &mut T, account: &mut Account)
+where
+    T: GenericTrader<'a>,
+{
     info!("running backtest");
     loop {
         let kline = trader.next_trade_session(account);
@@ -78,8 +92,7 @@ pub async fn main() {
     let klines = download_kline().await;
     let mut klines_iter = klines.clone().into_iter();
     let mut account = initialise_acount(klines);
-    let mut trader = initialise_macd_trader(&mut klines_iter);
-    //let mut trader = initialise_hodl_trader(&mut klines_iter);
+    let mut trader = initialise_dca_trader(&mut klines_iter);
     backtest(&mut trader, &mut account);
     info!("{:?}", account.profit_and_loss_history.last().unwrap());
 }

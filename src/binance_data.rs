@@ -70,6 +70,11 @@ pub struct BinanceKline {
     pub end_time: NaiveDateTime,
 }
 
+pub trait BinanceKlineTrait: OHLCV {
+    fn start_time(&self) -> NaiveDateTime;
+    fn end_time(&self) -> NaiveDateTime;
+}
+
 impl OHLCV for BinanceKline {
     fn open(&self) -> f64 {
         self.open
@@ -85,6 +90,15 @@ impl OHLCV for BinanceKline {
     }
     fn volume(&self) -> f64 {
         self.volume
+    }
+}
+
+impl BinanceKlineTrait for BinanceKline {
+    fn start_time(&self) -> NaiveDateTime {
+        self.start_time
+    }
+    fn end_time(&self) -> NaiveDateTime {
+        self.end_time
     }
 }
 
