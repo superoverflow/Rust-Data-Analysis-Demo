@@ -33,6 +33,35 @@
 - While i am trying to make DCA Indicator, I have `impl has stricter requirements than trait` error. I was trying to feed a `BinanceKline:OHLCV` to `init<T: OHLVC>`. We are not allow to do this because `BinanceKline` is a subtype of `OHLCV`. When implementating the trait, we need to provide implementation of all possiblility but not possibility to a subset of types
 - Solving the OHLVC problem seems to be tricky, because specialiation feature is not enabled in stable build. I can create a super trait to hold a custom indicator which consume ohlcv and time and the yata indicator, but it is a bit tricky on the return type and the method to be called. 
 - ta-rs is another library for TA and it offers flexibility for input type. if I cant make a good solution with yata, i may swap the library to ta-rs
+- Rust vs cooking: we can think of stack/heap/generic/traits all these concept in terms of cooking. 
+   - think of a generic functions like making cocktail. we can have a generic trait for bartender that can prepare cocktail
+   ```
+   trait<S,T,C> Bartener where C: Cocktails{
+     fn prepare_cocktail(spirit: S, T: water) -> C {
+       ...
+     }
+   }
+   ```
+   - think of why do we need size? why do we need dyn/box
+   ```
+   trait Cashier {
+     fn get_bill(currency)
+   }
+   ```
+   - think of if one day we need to extend this library so that get_bill can handle crypto for example
+   - how should we deal with it? newtype? impl new traits?
+- Tried to simplify the code by making a generic implementation but it wouldnt work because we dont have specialisation now
+```
+// Below will cause error due to implementation conflict. Unfortunately specialiation is not allow for stable release
+impl<T:IndicatorInstance> BinanceIndicatorInstance for T {
+     fn next_binance_kline(&mut self, candle: &BinanceKline) -> IndicatorResult {
+         self.next(candle)
+     }
+}
+```
+- macro may help, need to look at it next
+
+
 
 ## Ideas
 - Ideally, we should async pull the zip file, prepare the Kline data asychronously
