@@ -2,19 +2,10 @@ use crate::data::BinanceKline;
 use crate::traders::{GenericTrader, StakeSize, TradingFee};
 use crate::indicators::BinanceIndicatorInstance;
 use crate::indicators::DCA;
-use yata::core::{Action, IndicatorResult};
-use yata::prelude::dd::IndicatorInstanceDyn;
+use yata::core::{Action};
 use yata::prelude::*;
 
 use log::debug;
-
-
-struct IndicatorInstanceWrapper(Box<dyn IndicatorInstanceDyn<BinanceKline>>);
-impl BinanceIndicatorInstance for IndicatorInstanceWrapper {
-    fn next_binance_kline(&mut self, candle: &BinanceKline) -> IndicatorResult {
-        self.0.next(candle)
-    }
-}
 
 pub struct DCATrader<'a> {
     trading_fee: TradingFee,
@@ -32,7 +23,6 @@ impl<'a> GenericTrader<'a> for DCATrader<'a> {
         debug!("creating a DCA Trader");
         let dca = DCA::default();
         let dca = dca.init(&kline_feed.next().unwrap()).expect("Unable to initialise DCA");
-        let dca = IndicatorInstanceWrapper(Box::new(dca));
         Self {
             kline_feed,
             indicator: Box::new(dca),
@@ -57,7 +47,7 @@ impl<'a> GenericTrader<'a> for DCATrader<'a> {
     }
 
     fn determine_trade(signals: &[Action]) -> Action {
-        debug!("determine trades with hodl signal");
+        debug!("determine trades with dca signal");
         *signals.get(0).unwrap()
     }
 }

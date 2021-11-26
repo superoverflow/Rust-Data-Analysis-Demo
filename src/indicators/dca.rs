@@ -1,6 +1,6 @@
 use crate::data::{BinanceKline, BinanceKlineTrait};
 use crate::indicators::BinanceIndicatorInstance;
-use chrono::{Datelike, NaiveDateTime};
+use chrono::{Datelike, NaiveDateTime, NaiveDate};
 use yata::core::{Action, Error, IndicatorResult, OHLCV};
 use yata::prelude::*;
 use log::info;
@@ -11,7 +11,7 @@ pub struct DCA {}
 #[derive(Debug, Clone, Copy)]
 pub struct DCAInstance {
     cfg: DCA,
-    last_timestamp: Option<NaiveDateTime>,
+    last_timestamp: NaiveDateTime,
 }
 
 impl IndicatorConfig for DCA {
@@ -19,7 +19,7 @@ impl IndicatorConfig for DCA {
     const NAME: &'static str = "DCA";
     fn init<T: OHLCV>(self, _candle: &T) -> Result<Self::Instance, Error> {
         Ok(Self::Instance {
-            last_timestamp: None,
+            last_timestamp: NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0),
             cfg: self,
         })
     }
@@ -48,21 +48,21 @@ impl IndicatorInstance for DCAInstance {
     }
 
     fn next<T: OHLCV>(&mut self, _candle: &T) -> IndicatorResult {
-        IndicatorResult::new(&[], &[Action::Buy(1)])
+        IndicatorResult::new(&[], &[])
     }
 }
 
 impl BinanceIndicatorInstance for DCAInstance {
     fn next_binance_kline(&mut self, candle: &BinanceKline) -> IndicatorResult {
-        info!("next_binance_kline from DCAInstance");
-        let current_month = (*candle).start_time().month();
-        let last_month = self.last_timestamp.unwrap().month();
-
+        let current_time = (*candle).start_time();
+        let current_month = current_time.month();
+        let last_month = self.last_timestamp.month();
         let action = if current_month != last_month {
             Action::Buy(1)
         } else {
             Action::None
         };
+        self.last_timestamp = current_time;
         IndicatorResult::new(&[], &[action])
     }
 }
