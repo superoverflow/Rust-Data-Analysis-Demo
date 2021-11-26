@@ -42,7 +42,7 @@ pub trait GenericTrader<'a> {
             TradingFee::PercentageFee(pct) => stake * pct / (1.0 - pct),
         };
         let quantity = (stake + fee) / price;
-
+        // FIXME: didnt work for DCA Trader
         if quantity > 0.0 {
             info!("B {}, {:.08}, {:.08}, {:.02}", timestamp, quantity, price, stake);
             account.open(timestamp, quantity, price, fee);

@@ -18,7 +18,7 @@ impl IndicatorConfig for DCA {
     const NAME: &'static str = "DCA";
     fn init<T: OHLCV>(self, _candle: &T) -> Result<Self::Instance, Error> {
         Ok(Self::Instance {
-            last_timestamp: NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0),
+            last_timestamp: NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0),  // FIXME: a magic date before crypto happens
             cfg: self,
         })
     }
