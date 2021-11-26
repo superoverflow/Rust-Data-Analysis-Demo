@@ -1,10 +1,10 @@
 mod account;
-mod binance_data;
+mod data;
 mod indicators;
 mod traders;
 
 use account::{Account, Position};
-use binance_data::BinanceKline;
+use data::{BinanceKline, get_kline_data};
 use chrono::{Duration, NaiveDate, Utc};
 use traders::{DCATrader, GenericTrader, HODLTrader, MACDTrader, StakeSize, TradingFee};
 
@@ -21,7 +21,7 @@ async fn download_kline() -> Vec<BinanceKline> {
         "download data from binance for [{}/{}] from [{}] to [{}]",
         symbol, interval, start_date, end_date
     );
-    let klines = binance_data::get_kline_data(symbol, interval, start_date, end_date).await;
+    let klines = get_kline_data(symbol, interval, start_date, end_date).await;
     info!("downloaded [{}] klines", klines.len());
     klines
 }

@@ -1,4 +1,4 @@
-use crate::binance_data::{BinanceKline, BinanceKlineTrait};
+use crate::data::{BinanceKline, BinanceKlineTrait};
 use crate::indicators::BinanceIndicatorInstance;
 use chrono::{Datelike, NaiveDateTime};
 use yata::core::{Action, Error, IndicatorResult, OHLCV};

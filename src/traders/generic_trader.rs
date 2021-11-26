@@ -1,4 +1,4 @@
-use crate::binance_data::BinanceKline;
+use crate::data::BinanceKline;
 use crate::indicators::BinanceIndicatorInstance;
 use crate::account::Account;
 use chrono::NaiveDateTime;

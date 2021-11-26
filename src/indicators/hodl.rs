@@ -1,4 +1,4 @@
-use crate::binance_data::BinanceKline;
+use crate::data::BinanceKline;
 use crate::indicators::BinanceIndicatorInstance;
 use yata::core::{Action, Error, IndicatorResult, OHLCV};
 use yata::prelude::*;

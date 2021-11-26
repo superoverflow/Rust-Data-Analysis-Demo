@@ -5,7 +5,7 @@ mod hodl;
 pub use hodl::HODL;
 
 
-use crate::binance_data::BinanceKline;
+use crate::data::BinanceKline;
 use yata::core::IndicatorResult;
 
 pub trait BinanceIndicatorInstance {
