@@ -1,7 +1,8 @@
 use crate::binance_data::BinanceKline;
+use crate::indicators::BinanceIndicatorInstance;
 use crate::account::Account;
 use chrono::NaiveDateTime;
-use yata::core::{Action,IndicatorResult};
+use yata::core::Action;
 use log::{info, debug};
 
 #[allow(dead_code)]
@@ -16,10 +17,6 @@ pub enum TradingFee {
 pub enum StakeSize {
     FixAmount(f64),
     FixPercentage(f64),
-}
-
-pub trait BinanceIndicatorInstance {
-    fn next_binance_kline(&mut self, candle: &BinanceKline) -> IndicatorResult ;
 }
 
 pub trait GenericTrader<'a> {

@@ -1,5 +1,5 @@
 mod generic_trader;
-pub use generic_trader::{BinanceIndicatorInstance, GenericTrader, StakeSize, TradingFee};
+pub use generic_trader::{GenericTrader, StakeSize, TradingFee};
 
 mod macd_trader;
 pub use macd_trader::MACDTrader;

@@ -1,5 +1,6 @@
 use crate::binance_data::BinanceKline;
-use crate::traders::{BinanceIndicatorInstance, GenericTrader, StakeSize, TradingFee};
+use crate::traders::{GenericTrader, StakeSize, TradingFee};
+use crate::indicators::BinanceIndicatorInstance;
 use yata::core::{Action, IndicatorResult};
 use yata::indicators::MACD;
 use yata::prelude::dd::IndicatorInstanceDyn;
