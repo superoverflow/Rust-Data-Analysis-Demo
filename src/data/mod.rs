@@ -1,2 +1,2 @@
 mod binance;
-pub use binance::{get_kline_data, BinanceKline, BinanceKlineTrait};
+pub use binance::{get_kline_data, BinanceKline};

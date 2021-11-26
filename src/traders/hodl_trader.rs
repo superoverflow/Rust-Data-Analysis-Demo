@@ -2,19 +2,11 @@ use crate::data::BinanceKline;
 use crate::traders::{GenericTrader, StakeSize, TradingFee};
 use crate::indicators::BinanceIndicatorInstance;
 use crate::indicators::HODL;
-use yata::core::{Action, IndicatorResult};
-use yata::prelude::dd::IndicatorInstanceDyn;
+use yata::core::Action;
 use yata::prelude::*;
 
 use log::debug;
 
-
-struct IndicatorInstanceWrapper(Box<dyn IndicatorInstanceDyn<BinanceKline>>);
-impl BinanceIndicatorInstance for IndicatorInstanceWrapper {
-    fn next_binance_kline(&mut self, candle: &BinanceKline) -> IndicatorResult {
-        self.0.next(candle)
-    }
-}
 
 pub struct HODLTrader<'a> {
     trading_fee: TradingFee,
@@ -32,10 +24,10 @@ impl<'a> GenericTrader<'a> for HODLTrader<'a> {
         debug!("creating a HODL Trader");
         let hodl = HODL::default();
         let hodl = hodl.init(&kline_feed.next().unwrap()).expect("Unable to initialise MACD");
-        let hodl = IndicatorInstanceWrapper(Box::new(hodl));
+        let hodl = Box::new(hodl);
         Self {
             kline_feed,
-            indicator: Box::new(hodl),
+            indicator: hodl,
             trading_fee,
             stake_size: StakeSize::FixPercentage(1.),
         }

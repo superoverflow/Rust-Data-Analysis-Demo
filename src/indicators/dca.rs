@@ -1,9 +1,8 @@
-use crate::data::{BinanceKline, BinanceKlineTrait};
+use crate::data::BinanceKline;
 use crate::indicators::BinanceIndicatorInstance;
 use chrono::{Datelike, NaiveDateTime, NaiveDate};
 use yata::core::{Action, Error, IndicatorResult, OHLCV};
 use yata::prelude::*;
-use log::info;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DCA {}
@@ -54,7 +53,7 @@ impl IndicatorInstance for DCAInstance {
 
 impl BinanceIndicatorInstance for DCAInstance {
     fn next_binance_kline(&mut self, candle: &BinanceKline) -> IndicatorResult {
-        let current_time = (*candle).start_time();
+        let current_time = (*candle).start_time;
         let current_month = current_time.month();
         let last_month = self.last_timestamp.month();
         let action = if current_month != last_month {

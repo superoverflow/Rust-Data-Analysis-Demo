@@ -36,7 +36,7 @@ impl<'a> GenericTrader<'a> for MACDTrader<'a> {
         let macd = IndicatorInstanceWrapper(Box::new(macd));
         Self {
             kline_feed,
-            indicator: Box::new(macd),
+            indicator: Box::new(macd),    // TODO need to fix this over boxing
             trading_fee,
             stake_size,
         }
