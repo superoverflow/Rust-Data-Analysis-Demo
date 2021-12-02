@@ -15,11 +15,10 @@ pub struct HODLTrader<'a> {
     indicator: Box<dyn BinanceIndicatorInstance>,
 }
 
-impl<'a> GenericTrader<'a> for HODLTrader<'a> {
-    fn new(
+impl<'a> HODLTrader<'a> {
+    pub fn new(
         kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
         trading_fee: TradingFee,
-        _stake_size: StakeSize,
     ) -> Self {
         debug!("creating a HODL Trader");
         let hodl = HODL::default();
@@ -32,6 +31,9 @@ impl<'a> GenericTrader<'a> for HODLTrader<'a> {
             stake_size: StakeSize::FixPercentage(1.),
         }
     }
+}
+
+impl<'a> GenericTrader<'a> for HODLTrader<'a> {
     fn stake_size(&self) -> StakeSize {
         self.stake_size
     }

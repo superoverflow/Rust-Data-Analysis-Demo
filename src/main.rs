@@ -55,18 +55,16 @@ fn initialise_hodl_trader<'a>(
     klines_iter: &'a mut dyn Iterator<Item = BinanceKline>,
 ) -> HODLTrader {
     info!("setting up hodl trader");
-    let ignore_stake_size = StakeSize::FixPercentage(1.);
     let trading_fee = TradingFee::PercentageFee(0.005);
-    let trader = HODLTrader::new(klines_iter, trading_fee, ignore_stake_size);
+    let trader = HODLTrader::new(klines_iter, trading_fee);
     trader
 }
 
 #[allow(dead_code)]
 fn initialise_dca_trader<'a>(klines_iter: &'a mut dyn Iterator<Item = BinanceKline>) -> DCATrader {
     info!("setting up dca trader");
-    let ignore_stake_size = StakeSize::FixPercentage(1.);
     let trading_fee = TradingFee::PercentageFee(0.005);
-    let trader = DCATrader::new(klines_iter, trading_fee, ignore_stake_size);
+    let trader = DCATrader::new(klines_iter, trading_fee);
     trader
 }
 
@@ -86,13 +84,17 @@ where
     }
 }
 
+
+
+
 #[tokio::main]
 pub async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let klines = download_kline().await;
     let mut klines_iter = klines.clone().into_iter();
     let mut account = initialise_acount(klines);
-    let mut trader = initialise_dca_trader(&mut klines_iter);
+    let mut trader = initialise_macd_trader(&mut klines_iter);
     backtest(&mut trader, &mut account);
     info!("{:?}", account.profit_and_loss_history.last().unwrap());
+    info!("available fund: {} / position: {:?}", account.available_fund, account.position);
 }

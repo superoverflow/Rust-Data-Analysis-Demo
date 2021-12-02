@@ -22,8 +22,8 @@ pub struct MACDTrader<'a> {
     indicator: Box<dyn BinanceIndicatorInstance>,
 }
 
-impl<'a> GenericTrader<'a> for MACDTrader<'a> {
-    fn new(
+impl<'a> MACDTrader<'a> {
+    pub fn new(
         kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
         trading_fee: TradingFee,
         stake_size: StakeSize,
@@ -41,6 +41,9 @@ impl<'a> GenericTrader<'a> for MACDTrader<'a> {
             stake_size,
         }
     }
+}
+
+impl<'a> GenericTrader<'a> for MACDTrader<'a> {
 
     fn stake_size(&self) -> StakeSize {
         self.stake_size

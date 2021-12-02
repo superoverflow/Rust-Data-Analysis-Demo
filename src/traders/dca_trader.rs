@@ -14,11 +14,10 @@ pub struct DCATrader<'a> {
     indicator: Box<dyn BinanceIndicatorInstance>,
 }
 
-impl<'a> GenericTrader<'a> for DCATrader<'a> {
-    fn new(
+impl<'a> DCATrader<'a> {
+    pub fn new(
         kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
         trading_fee: TradingFee,
-        _stake_size: StakeSize,
     ) -> Self {
         debug!("creating a DCA Trader");
         let dca = DCA::default();
@@ -30,6 +29,10 @@ impl<'a> GenericTrader<'a> for DCATrader<'a> {
             stake_size: StakeSize::FixAmount(100.0),
         }
     }
+}
+
+impl<'a> GenericTrader<'a> for DCATrader<'a> {
+
     fn stake_size(&self) -> StakeSize {
         self.stake_size
     }

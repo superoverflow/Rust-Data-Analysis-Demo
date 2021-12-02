@@ -20,11 +20,6 @@ pub enum StakeSize {
 }
 
 pub trait GenericTrader<'a> {
-    fn new(
-        kline_feed: &'a mut dyn Iterator<Item = BinanceKline>,
-        trading_fee: TradingFee,
-        stake_size: StakeSize,
-    ) -> Self;
     fn determine_trade(signals: &[Action]) -> Action;
     fn stake_size(&self) -> StakeSize;
     fn trading_fee(&self) -> TradingFee;
@@ -34,7 +29,7 @@ pub trait GenericTrader<'a> {
     fn execute_buy(&self, timestamp: NaiveDateTime, price: f64, account: &mut Account) {
         let fund = account.available_fund;
         let stake = match self.stake_size() {
-            StakeSize::FixAmount(amount) => amount,
+            StakeSize::FixAmount(amount) => if amount <= fund { amount } else { 0. },
             StakeSize::FixPercentage(pct) => fund * pct,
         };
         let fee = match self.trading_fee() {
@@ -42,9 +37,9 @@ pub trait GenericTrader<'a> {
             TradingFee::PercentageFee(pct) => stake * pct / (1.0 - pct),
         };
         let quantity = (stake + fee) / price;
-        // FIXME: didnt work for DCA Trader
+        
         if quantity > 0.0 {
-            info!("B {}, {:.08}, {:.08}, {:.02}", timestamp, quantity, price, stake);
+            info!("{}, B {:.08} @ ${:.08}, available_fund: {:.02}", timestamp, quantity, price, fund - stake);
             account.open(timestamp, quantity, price, fee);
         }
     }
@@ -56,7 +51,7 @@ pub trait GenericTrader<'a> {
             TradingFee::PercentageFee(pct) => price * current_position * pct,
         };
         if current_position > 0.0 {
-            info!("S {}, {:.08}, {:0.8}", timestamp, current_position, price);
+            info!("{}, S {:.08} @ $ {:0.8}", timestamp, current_position, price);
             account.close(timestamp, current_position, price, fee)
         }
     }
