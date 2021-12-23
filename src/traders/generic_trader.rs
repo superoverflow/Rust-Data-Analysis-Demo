@@ -3,7 +3,7 @@ use crate::indicators::BinanceIndicatorInstance;
 use crate::account::Account;
 use chrono::NaiveDateTime;
 use yata::core::Action;
-use log::{info, debug};
+use log::debug;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
@@ -39,7 +39,7 @@ pub trait GenericTrader<'a> {
         let quantity = (stake + fee) / price;
         
         if quantity > 0.0 {
-            info!("{}, B {:.08} @ ${:.08}, available_fund: {:.02}", timestamp, quantity, price, fund - stake);
+            debug!("{}, B {:.08} @ ${:.08}, available_fund: {:.02}", timestamp, quantity, price, fund - stake);
             account.open(timestamp, quantity, price, fee);
         }
     }
@@ -51,7 +51,7 @@ pub trait GenericTrader<'a> {
             TradingFee::PercentageFee(pct) => price * current_position * pct,
         };
         if current_position > 0.0 {
-            info!("{}, S {:.08} @ $ {:0.8}", timestamp, current_position, price);
+            debug!("{}, S {:.08} @ $ {:0.8}", timestamp, current_position, price);
             account.close(timestamp, current_position, price, fee)
         }
     }
